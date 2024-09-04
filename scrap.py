@@ -12,12 +12,26 @@ sources = []
 list_roles = []
 joblist = []
 
-start_date = time.strftime("2024-08-20")
+input_locale = input("Deseja buscar vagas no BR ou Exterior? (BR/EXT)")
+
+if input_locale == "BR":
+  sources_path = "br/sources.txt";
+  string_search = "%22remoto%22";
+else :
+  sources_path = "ext/sources.txt"
+  string_search = "%22remote%22+-%22remote+in+the+US%22"
+
+input_start_date = input("Qual a data de início da busca? (AAAA-MM-DD)")
+
+if input_start_date != "" :
+  start_date = time.strftime(input_start_date)
+else :
+  start_date = time.strftime("%Y-%m-%d")
 
 workbook = openpyxl.Workbook()
 sheet = workbook.active
 
-with open('sources.txt', 'r') as file:
+with open(sources_path, 'r') as file:
   for line in file:
     sources.append(line.strip())
     
@@ -30,7 +44,7 @@ for role in list_roles:
   current_tab = workbook.create_sheet(role)
   
   for source in sources:
-    url = f"https://www.google.com/search?q=site:{source}+%22{role}%22+%22remote%22+-%22remote+in+the+US%22+%22brazil\"+after:{start_date}"
+    url = f"https://www.google.com/search?q=site:{source}+%22{role}%22+{string_search}+\"+after:{start_date}"
     driver.get(url)
     input("Please complete the CAPTCHA and then press Enter to continue...")
     result_content = driver.find_elements(By.CSS_SELECTOR, '#search div > div h3')

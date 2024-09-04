@@ -1,0 +1,8 @@
+boards.greenhouse.io
+jobs.ashbyhq.com
+jobs.jobvite.com
+myworkdayjobs.com
+careers.jobscore.com
+ats.comparably.com
+*.bamboohr.com
+*.remote.com
