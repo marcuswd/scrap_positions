@@ -10,7 +10,7 @@ driver = webdriver.Chrome()
 
 sources = []
 list_roles = []
-total_vacancies = 0
+positions = []
 
 input_locale = input("Deseja buscar vagas no BR ou Exterior? (br/ext) [Deixe em branco para buscar no Exterior]")
 
@@ -44,7 +44,7 @@ with open('roles.txt', 'r', encoding='utf-8') as file:
 
 for role in list_roles:
   current_tab = workbook.create_sheet(role)
-  print(f"Buscando vagas para {role}")
+  print(f"Buscando vagas para {role} - Total vacancies = {len(positions)}")
   for source in sources:
     url = f"https://www.google.com/search?q=site:{source}+%22{role}%22+{string_search}+\"+after:{start_date}"
     driver.get(url)
@@ -53,46 +53,48 @@ for role in list_roles:
     while True:
       try:
           # Check for an element that appears only after the CAPTCHA is resolved
-          driver.find_element(By.CSS_SELECTOR, '#search div > div h3')
+          driver.find_element(By.CSS_SELECTOR, '#botstuff')
           break  # CAPTCHA is resolved, exit the loop
       except NoSuchElementException:
           # CAPTCHA is not resolved yet, wait for a while before checking again
           time.sleep(5)
   
-  while True:
-    # Extract job listings from the current page
-    result_content = driver.find_elements(By.CSS_SELECTOR, '#search div > div h3')
-    if result_content:
+    while True:
+      print(f"Extracting job listings from {driver.current_url}")
+      # Extract job listings from the current page
+      result_content = driver.find_elements(By.CSS_SELECTOR, '#search div > div h3')
+      if result_content:
         for position in result_content:
-            job_title = position.text
-            job_url = position.find_element(By.XPATH, '..').get_attribute('href')
-            current_tab.append([job_title, job_url])
-            total_vacancies += 1
-    
-    try:
-        # Find and click the "Next" button to go to the next page
-        next_button = driver.find_element(By.ID, 'pnnext')
-        next_button.click()
-        
-        # Wait for the next page to load
-        time.sleep(2)
-        
-        # Wait for the CAPTCHA to be resolved again if it appears
-        while True:
-            try:
-                driver.find_element(By.CSS_SELECTOR, '#search div > div h3')
-                break
-            except NoSuchElementException:
-                time.sleep(5)
-    except NoSuchElementException:
-        # No more pages left
-        break
+          positions.append(position)
+          job_title = position.text
+          job_url = position.find_element(By.XPATH, '..').get_attribute('href')
+          current_tab.append([job_title, job_url])
+      
+      try:
+          # Find and click the "Next" button to go to the next page
+          next_button = driver.find_element(By.ID, 'pnnext')
+          next_button.click()
+          
+          # Wait for the next page to load
+          time.sleep(2)
+          
+          # Wait for the CAPTCHA to be resolved again if it appears
+          while True:
+              try:
+                  driver.find_element(By.CSS_SELECTOR, '#botstuff')
+                  break
+              except NoSuchElementException:
+                  time.sleep(5)
+      except NoSuchElementException:
+          # No more pages left
+          break
 
 # Save the workbook
-if(total_vacancies != 0):
+if len(positions) > 0:
   if 'Sheet' in workbook.sheetnames:
+    print("Salvando arquivo...")
     workbook.remove(workbook['Sheet'])
     workbook.save(f"vagas_{input_locale}_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.xlsx")
-  else :
-    print("Nenhuma vaga encontrada")
-    driver.quit()
+else:
+  print("Nenhuma vaga encontrada")
+  driver.quit()
